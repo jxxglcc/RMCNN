@@ -26,10 +26,11 @@ MAtt is provided at https://github.com/CECNL/MAtt
 
 * [model](https://github.com/jxxglcc/RMCNN/tree/main/model) - This file contains the model used in this repository.
 * [utils](https://github.com/jxxglcc/RMCNN/tree/main/utils) - This file contains the functions used in this repository.
-* [hold_out_benchmark.py](https://github.com/jxxglcc/RMCNN/blob/main/hold_out_benchmark.py) - holdout  code for benchmarks.
+* [FBCSP-SVM](https://github.com/jxxglcc/RMCNN/tree/main/FBCSP-SVM) - This file contains the example code for classifying MI-EEG data using FBCSP-SVM.
+* [Tensor-CSPNet and Graph-CSPNet](https://github.com/jxxglcc/RMCNN/tree/main/Tensor-CSPNet%20and%20Graph-CSPNet) - This file contains the example code for classifying MI-EEG data using Tensor-CSPNet or Graph-CSPNet.
 *  [main_FBCNet.py](https://github.com/jxxglcc/RMCNN/blob/main/main_FBCNet.py) - An example code for classifying MI-EEG data using FBCNet.
 * [main_FBMSNet.py](https://github.com/jxxglcc/RMCNN/blob/main/main_FBMSNnet.py) - An example code for classifying MI-EEG data using FBMSNet.
 * [main_Conformer.py](https://github.com/jxxglcc/RMCNN/blob/main/main_Conformer.py) - An example code for classifying MI-EEG data using Conformer.
 * [main_TSFCNet .py](https://github.com/jxxglcc/RMCNN/blob/main/main_TSFCNet.py) - An example code for classifying MI-EEG data using TSFCNet.
 * [main_MAtt.py](https://github.com/jxxglcc/RMCNN/blob/main/main_MAtt.py) - An example code for classifying MI-EEG data using MAtt.
-
+* [hold_out_benchmark.py](https://github.com/jxxglcc/RMCNN/blob/main/hold_out_benchmark.py) - holdout  code for FBCNet, FBMSNet, Conformer, TSFCNet and MAtt.
