@@ -34,3 +34,8 @@ MAtt is provided at [https://github.com/CECNL/MAtt](https://github.com/CECNL/MAt
 * [main_TSFCNet .py](https://github.com/jxxglcc/RMCNN/blob/main/main_TSFCNet.py) - An example code for classifying MI-EEG data using TSFCNet.
 * [main_MAtt.py](https://github.com/jxxglcc/RMCNN/blob/main/main_MAtt.py) - An example code for classifying MI-EEG data using MAtt.
 * [hold_out_benchmark.py](https://github.com/jxxglcc/RMCNN/blob/main/hold_out_benchmark.py) - holdout  code for FBCNet, FBMSNet, Conformer, TSFCNet and MAtt.
+
+### Data Availability
+
+The BCIC-IV-2a dataset can be downloaded in the following link: [https://www.bbci.de/competition/iv/](https://www.bbci.de/competition/iv/); The OpenBMI dataset) can be downloaded in the following link: [http://gigadb.org/dataset/100542](http://gigadb.org/dataset/100542); The can be downloaded in the following link: https://gin.g-node.org/robintibor/high-gamma-dataset.
+
