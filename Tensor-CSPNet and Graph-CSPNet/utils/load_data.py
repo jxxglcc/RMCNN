@@ -335,22 +335,6 @@ class dataloader_in_main(th.utils.data.Dataset):
         return len(self.data)
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-def add_noisy(eeg_data, ratio_noisy):
-    # 定义噪声标准差（可以根据需求调整）
-    # noise_std = 0.1  # 噪声的标准差
-    signal_std = np.std(eeg_data)  # EEG 数据的标准差
-    noise_std = ratio_noisy * signal_std  # 设置噪声标准差为信号标准差的 5%
-
-
-    # 生成与原数据同维度的噪声
-    noise = np.random.normal(0, noise_std, eeg_data.shape)
-
-    # 向原始 EEG 数据添加噪声
-    noisy_eeg_data = eeg_data + noise
-
-    return  noisy_eeg_data
-
-
 def get_data(subject,dataset_id,PATH):
 
     NO_channels   = 22
@@ -445,9 +429,7 @@ class load_BCIC:
         elif scenario == 'Holdout':
             ratio_noisy = 0.05
             self.x_1, self.y_labels_1 = get_data(sub, 0, path)
-            self.x_1 = add_noisy(self.x_1, ratio_noisy)
             self.x_2, self.y_labels_2 = get_data(sub, 1, path)
-            self.x_2 = add_noisy(self.x_2, ratio_noisy)
 
             fbank    = FilterBank(fs = 250, pass_width = self.freq_seg)
             _        = fbank.get_filter_coeff()
