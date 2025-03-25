@@ -1,6 +1,7 @@
 from utils.utils import *
 import torch.nn as nn
 from spd.optimizer import MixOptimizer
+from utils.CenterLoss import CenterLoss
 from pytorch_metric_learning import losses
 import time
 
@@ -33,11 +34,11 @@ def interaug(args, data_loader):
         aug_label = torch.from_numpy(aug_label).cuda()
         aug_label = aug_label.long()
     else:
-        aug_data = torch.from_numpy(aug_data).float().cpu()
-        aug_label = torch.from_numpy(aug_label).long().cpu()
+        aug_data = torch.from_numpy(aug_data).float()
+        aug_label = torch.from_numpy(aug_label).long()
     return aug_data, aug_label
 
-def train_one_epoch(args, data_loader, net, loss_fn_clf, optimizer, loss_fn_inter=None):
+def train_one_epoch(args, data_loader, net, loss_fn_clf, optimizer, optimzer4center=None, loss_fn_intra=None):
     net.train()
     tl = Averager()
     pred_train = []
@@ -46,23 +47,26 @@ def train_one_epoch(args, data_loader, net, loss_fn_clf, optimizer, loss_fn_inte
         
         if args.CUDA:
             x_batch, y_batch = x_batch.cuda(), y_batch.cuda()
-        else:
-            x_batch, y_batch = x_batch.cpu(), y_batch.cpu()
-
         if args.is_aug:
             aug_data, aug_label = interaug(args, data_loader)
             x_batch = torch.cat((x_batch, aug_data))
-            y_batch = torch.cat((y_batch, aug_label))  
+            y_batch = torch.cat((y_batch, aug_label))
 
         fe, out = net(x_batch)
         loss_clf = loss_fn_clf(out, y_batch)
         loss = args.coefficient_clf * loss_clf
-        if args.enable_inter:
-            loss_inter = loss_fn_inter(fe, y_batch)
-            loss += args.coefficient_inter * loss_inter
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()      
+        if args.enable_intra:
+            loss_intra = loss_fn_intra(y_batch, fe)
+            loss += args.coefficient_intra * loss_intra.squeeze()
+            optimizer.zero_grad()
+            optimzer4center.zero_grad
+            loss.backward()
+            optimizer.step()
+            optimzer4center.step()  
+        else:
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()      
 
         _, pred = torch.max(out, 1)
         tl.add(loss)
@@ -71,7 +75,7 @@ def train_one_epoch(args, data_loader, net, loss_fn_clf, optimizer, loss_fn_inte
     return tl.item(), pred_train, act_train
 
 
-def predict(args, data_loader, net, loss_fn_clf, loss_fn_inter=None):
+def predict(args, data_loader, net, loss_fn_clf, loss_fn_intra=None):
     net.eval()
     pred_val = []
     act_val = []
@@ -80,14 +84,12 @@ def predict(args, data_loader, net, loss_fn_clf, loss_fn_inter=None):
         for i, (x_batch, y_batch) in enumerate(data_loader):
             if args.CUDA:
                 x_batch, y_batch = x_batch.cuda(), y_batch.cuda()
-            else:
-                x_batch, y_batch = x_batch.cpu(), y_batch.cpu()
             fe, out = net(x_batch)
             loss_clf = loss_fn_clf(out, y_batch)
             loss = args.coefficient_clf * loss_clf
-            if args.enable_inter:
-                loss_inter = loss_fn_inter(fe, y_batch)
-                loss += args.coefficient_inter * loss_inter
+            if args.enable_intra:
+                loss_intra = loss_fn_intra(y_batch, fe)
+                loss += args.coefficient_intra * loss_intra.squeeze()
             _, pred = torch.max(out, 1)
             vl.add(loss.item())
             pred_val.extend(pred.data.tolist())
@@ -95,9 +97,11 @@ def predict(args, data_loader, net, loss_fn_clf, loss_fn_inter=None):
     return vl.item(), pred_val, act_val
 
 
+
 def train(args, data_train, label_train, data_val, label_val, subject):
     seed_all(args.random_seed)
     save_name = 'sub' + str(subject)
+
 
     train_loader = get_dataloader(data_train, label_train, args.batch_size)
 
@@ -106,14 +110,23 @@ def train(args, data_train, label_train, data_val, label_val, subject):
     model = get_model(args)
     if args.CUDA:
         model = model.cuda()
-    else:
-        model = model.cpu()
 
     CE = nn.CrossEntropyLoss()
-    tripletloss = losses.TripletMarginLoss(margin=args.tripletloss_margin)
+    if args.model == 'FBMSNet' or args.model == 'FBCNet':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=1152, is_cuda=args.CUDA) 
+    elif args.model == 'conformer':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=1080, is_cuda=args.CUDA)  
+    elif args.model == 'TSFCNet4a':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=672, is_cuda=args.CUDA) 
+    else:
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=len(args.freq_band) * args.r_chan * (args.r_chan + 1) // 2)
+
     optimizer = torch.optim.Adam([
-        {'params':filter(lambda p: p.requires_grad, model.parameters()), 'lr':args.learning_rate},                 
-        ])
+            {'params':filter(lambda p: p.requires_grad, model.parameters()), 'lr':args.learning_rate},                 
+            ])
+
+
+    optimzer4center = torch.optim.SGD(centerloss.parameters(), lr=0.01)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1,
 	 patience=args.patience_scheduler,verbose=True, threshold=0.0001, threshold_mode='rel', cooldown=0, 
@@ -139,7 +152,7 @@ def train(args, data_train, label_train, data_val, label_val, subject):
 
         start = time.time()
         loss_train, pred_train, act_train = train_one_epoch(
-            args, data_loader=train_loader, net=model, loss_fn_clf=CE, optimizer=optimizer, loss_fn_inter=tripletloss
+            args, data_loader=train_loader, net=model, loss_fn_clf=CE, optimizer=optimizer, optimzer4center=optimzer4center, loss_fn_intra=centerloss
             )
         end = time.time()
         print (str(end-start))
@@ -149,7 +162,7 @@ def train(args, data_train, label_train, data_val, label_val, subject):
               .format(loss_train, acc_train))
 
         loss_val, pred_val, act_val = predict(
-            args, data_loader=val_loader, net=model, loss_fn_clf=CE, loss_fn_inter=tripletloss
+            args, data_loader=val_loader, net=model, loss_fn_clf=CE, loss_fn_intra=centerloss
             )
         scheduler.step(loss_val)
         acc_val, _ = get_metrics(y_pred=pred_val, y_true=act_val)
@@ -160,12 +173,10 @@ def train(args, data_train, label_train, data_val, label_val, subject):
             trlog['max_acc'] = acc_val
             trlog['min_loss'] = loss_val
             trlog['target_loss'] = loss_train
-            # if fold:
-            #     save_model('candidate')
             counter = 0
             # save model here for reproduce
             model_name_reproduce = save_name + '.pth'
-            save_path = os.path.join(args.save_path_model_param, 'model_first_stage')
+            save_path = os.path.join(args.save_path_model, 'model_first_stage')
             ensure_path(save_path)
             model_name_reproduce = os.path.join(save_path, model_name_reproduce)
             torch.save(model.state_dict(), model_name_reproduce)
@@ -182,9 +193,8 @@ def train(args, data_train, label_train, data_val, label_val, subject):
         trlog['val_loss'].append(loss_val)
         trlog['val_acc'].append(acc_val.item())
 
-        # print('ETA:{}/{} SUB:{}'.format(timer.measure(), timer.measure(epoch / args.max_epoch), subject))
     # save the training log file
-    save_path = os.path.join(args.save_path_log_param, 'log_first_stage')
+    save_path = os.path.join(args.save_path_log, 'log_first_stage')
     ensure_path(save_path)
     torch.save(trlog, os.path.join(save_path, save_name))
 
@@ -201,27 +211,31 @@ def test(args, data, label,  subject):
     model = get_model(args)
     if args.CUDA:
         model = model.cuda()
-    else:
-        model = model.cpu()
 
     CE = nn.CrossEntropyLoss()
-    tripletloss = losses.TripletMarginLoss(margin=args.tripletloss_margin)
+    if args.model == 'FBMSNet' or args.model == 'FBCNet':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=1152, is_cuda=args.CUDA)   
+    elif args.model == 'TSFCNet4a':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=672, is_cuda=args.CUDA)    
+    else:
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=len(args.freq_band) * args.r_chan * (args.r_chan + 1) // 2)
     model_name_reproduce = 'sub' + str(subject) + '.pth'
-    load_path_final = os.path.join(args.save_path_model_param, 'model_second_stage', model_name_reproduce)
+
+    if args.model == 'conformer':
+        load_path_final = os.path.join(args.save_path_model, 'model_first_stage', model_name_reproduce)
+    else:
+        load_path_final = os.path.join(args.save_path_model, 'model_second_stage', model_name_reproduce)
     model.load_state_dict(torch.load(load_path_final))
     loss, pred, act = predict(
-        args, data_loader=test_loader, net=model, loss_fn_clf=CE, loss_fn_inter=tripletloss
+        args, data_loader=test_loader, net=model, loss_fn_clf=CE, loss_fn_intra=centerloss
     )
     acc, cm = get_metrics(y_pred=pred, y_true=act)
     print('>>> Test:  loss={:.4f} acc={:.4f}'.format(loss, acc))
     return pred, act
 
-def combine_train(args, data_train, label_train, data_val, label_val, subject, target_loss, fold=None):
+def combine_train(args, data_train, label_train, data_val, label_val, subject, target_loss):
     seed_all(args.random_seed)
     save_name = 'sub' + str(subject)
-    if fold:
-        save_name = 'sub' + str(subject) + '_fold' + str(fold)
-    # set_up(args)
 
     train_loader = get_dataloader(data_train, label_train, args.batch_size)
     val_loader = get_dataloader(data_val, label_val, args.batch_size)
@@ -229,21 +243,28 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
     model = get_model(args)
     if args.CUDA:
         model = model.cuda()
-    else:
-        model = model.cpu()
-    model.load_state_dict(torch.load(os.path.join(args.save_path_model_param, 'model_first_stage', save_name + '.pth')))
+    model.load_state_dict(torch.load(os.path.join(args.save_path_model, 'model_first_stage', save_name + '.pth')))
 
     CE = nn.CrossEntropyLoss()
-    tripletloss = losses.TripletMarginLoss(margin=args.tripletloss_margin)
+    if args.model == 'FBMSNet' or args.model == 'FBCNet':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=1152, is_cuda=args.CUDA)  # conformer    
+    elif args.model == 'TSFCNet4a':
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=672, is_cuda=args.CUDA)    
+    else:
+        centerloss = CenterLoss(num_classes=args.num_class, feat_dim=len(args.freq_band) * args.r_chan * (args.r_chan + 1) // 2)
+    
+        
     optimizer = torch.optim.Adam([
-        {'params':filter(lambda p: p.requires_grad, model.parameters()), 'lr':args.learning_rate},                 
-        ])
+            {'params':filter(lambda p: p.requires_grad, model.parameters()), 'lr':args.learning_rate},                 
+            ])
 
+    optimzer4center = torch.optim.SGD(centerloss.parameters(), lr=0.01)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1,
 	 patience=args.patience_scheduler,verbose=True, threshold=0.0001, threshold_mode='rel', cooldown=0, 
 		 min_lr=0, eps=args.scheduler_eps)
     optimizer = MixOptimizer(optimizer)
+
 
     trlog = {}
     trlog['args'] = vars(args)
@@ -264,7 +285,7 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
         else:
             print('sub{} stage2 epoch{}'.format(subject, epoch))
         loss_train, pred_train, act_train = train_one_epoch(
-            args, data_loader=train_loader, net=model, loss_fn_clf=CE, optimizer=optimizer, loss_fn_inter=tripletloss
+            args, data_loader=train_loader, net=model, loss_fn_clf=CE, optimizer=optimizer, optimzer4center=optimzer4center, loss_fn_intra=centerloss
             )
 
         acc_train, _ = get_metrics(y_pred=pred_train, y_true=act_train)
@@ -272,7 +293,7 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
               .format(loss_train, acc_train))
 
         loss_val, pred_val, act_val = predict(
-            args, data_loader=val_loader, net=model, loss_fn_clf=CE, loss_fn_inter=tripletloss
+            args, data_loader=val_loader, net=model, loss_fn_clf=CE, loss_fn_intra=centerloss
             )
         scheduler.step(loss_val)
         acc_val, _ = get_metrics(y_pred=pred_val, y_true=act_val)
@@ -286,7 +307,7 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
             counter = 0
             # save model here for reproduce
             model_name_reproduce = save_name + '.pth'
-            save_path = os.path.join(args.save_path_model_param, 'model_second_stage')
+            save_path = os.path.join(args.save_path_model, 'model_second_stage')
             ensure_path(save_path)
             model_name_reproduce = os.path.join(save_path, model_name_reproduce)
             torch.save(model.state_dict(), model_name_reproduce)
@@ -295,9 +316,6 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
             counter += 1
 
         if epoch > args.min_epoch_cmb:
-            # if counter >= patience:
-            #     print('early stopping')
-            #     break
             if loss_val <= target_loss:
                 print('loss reach!')
                 break
@@ -307,8 +325,7 @@ def combine_train(args, data_train, label_train, data_val, label_val, subject, t
         trlog['val_loss'].append(loss_val)
         trlog['val_acc'].append(acc_val.item())
 
-        # print('ETA:{}/{} SUB:{}'.format(timer.measure(), timer.measure(epoch / args.max_epoch), subject))
     # save the training log file
-    save_path = os.path.join(args.save_path_log_param, 'log_second_stage')
+    save_path = os.path.join(args.save_path_log, 'log_second_stage')
     ensure_path(save_path)
     torch.save(trlog, os.path.join(save_path, save_name))
