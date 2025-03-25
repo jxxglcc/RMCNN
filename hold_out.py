@@ -2,8 +2,8 @@ import torch
 import numpy as np
 from utils.train_model import *
 from utils.utils import ensure_path, get_mean_cov_mat
-# from utils.GetBci2a import get_data_bcic4_2a
-# from utils.GetOpenBMI import get_data_open_bmi
+from utils.GetBci2a import get_data_bcic4_2a
+from utils.GetOpenBMI import get_data_open_bmi
 from utils.GetHG import get_data_hg
 from sklearn.model_selection import train_test_split
 import argparse
@@ -30,10 +30,10 @@ class HoldOut:
                     + 'notes:' + self.args.notes + '\n'
         )
         file.close()
-        # if args.dataset=='BCIC4_2a':
-        #     self.get_data = get_data_bcic4_2a
-        # elif args.dataset=='Open_BMI':
-        #     self.get_data = get_data_open_bmi
+        if args.dataset=='BCIC4_2a':
+            self.get_data = get_data_bcic4_2a
+        elif args.dataset=='Open_BMI':
+            self.get_data = get_data_open_bmi
         elif args.dataset=='HG':
             self.get_data = get_data_hg
 
@@ -51,7 +51,6 @@ class HoldOut:
             self.save_param = save_path
             self.args.save_path_model_param = os.path.join(self.args.save_path_model, save_path)
             self.args.save_path_log_param = os.path.join(self.args.save_path_log, save_path)
-            self.args.save_path_iter_param = os.path.join(self.args.save_path_iter, save_path)
 
     def prepare_data(self, data, label, is_ea=0):
         """
