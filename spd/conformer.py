@@ -187,9 +187,9 @@ class ClassificationHead(nn.Sequential):
             nn.Linear(emb_size, n_classes)
         )
         self.fc = nn.Sequential(
-            nn.Linear(1080, 256),
-            # nn.Linear(1880, 256),
-            # nn.Linear(2440, 256),
+            # nn.Linear(1080, 256), #bcic4-2a
+            # nn.Linear(1880, 256), #openbmi
+            nn.Linear(2440, 256), # hg
             nn.ELU(),
             nn.Dropout(0.5),
             nn.Linear(256, 32),
