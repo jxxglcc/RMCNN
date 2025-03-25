@@ -16,11 +16,11 @@ FBMSNet is provided at [https://github.com/ravikiran-mane/FBCNet](https://github
 
 Conformer is provided at [https://github.com/eeyhsong/EEG-Conformer](https://github.com/eeyhsong/EEG-Conformer)
 
-TSFCNet is provided at https://github.com/hongyizhi/TSFCNet
+TSFCNet is provided at [https://github.com/hongyizhi/TSFCNet](https://github.com/hongyizhi/TSFCNet)
 
-Tensor-CSPNet and Graph-CSPNet  is provided at [https://github.com/GeometricBCI/Tensor-CSPNet-and-Graph-CSPNet](https://github.com/GeometricBCI/Tensor-CSPNet-and-Graph-CSPNet)
+Tensor-CSPNet and Graph-CSPNet is provided at [https://github.com/GeometricBCI/Tensor-CSPNet-and-Graph-CSPNet](https://github.com/GeometricBCI/Tensor-CSPNet-and-Graph-CSPNet)
 
-MAtt is provided at https://github.com/CECNL/MAtt
+MAtt is provided at [https://github.com/CECNL/MAtt](https://github.com/CECNL/MAtt)
 
 ### File Descriptions
 
