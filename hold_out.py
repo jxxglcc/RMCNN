@@ -3,8 +3,8 @@ import numpy as np
 from utils.train_model import *
 from utils.utils import ensure_path, get_mean_cov_mat
 from utils.GetBci2a import get_data_bcic4_2a
-from utils.GetOpenBMI import get_data_open_bmi
-from utils.GetHG import get_data_hg
+# from utils.GetOpenBMI import get_data_open_bmi
+# from utils.GetHG import get_data_hg
 from sklearn.model_selection import train_test_split
 import argparse
 import itertools
@@ -32,10 +32,10 @@ class HoldOut:
         file.close()
         if args.dataset=='BCIC4_2a':
             self.get_data = get_data_bcic4_2a
-        elif args.dataset=='Open_BMI':
-            self.get_data = get_data_open_bmi
-        elif args.dataset=='HG':
-            self.get_data = get_data_hg
+        # elif args.dataset=='Open_BMI':
+        #     self.get_data = get_data_open_bmi
+        # elif args.dataset=='HG':
+        #     self.get_data = get_data_hg
 
 
     def update_hyparameters(self, params, is_best):
