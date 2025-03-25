@@ -7,19 +7,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     ######## Data ########
     #####bcic4-2a
-    parser.add_argument('--dataset', type=str, default='BCIC4_2a')
-    parser.add_argument('--data_path', type=str, default='./BCIC4-2a/data')
-    parser.add_argument('--subjects', type=int, default=9)
-    parser.add_argument('--num_class', type=int, default=4)
-    parser.add_argument('--sampling_rate', type=int, default=250)
-    parser.add_argument('--signal_length', type=int, default=1000)
-    parser.add_argument('--downsample_rate', type=int, default=2)
-    parser.add_argument('--in_chan', type=int, default=22)
-    parser.add_argument('--blocks', type=int, default=None)
-    parser.add_argument('--max_epoch', type=int, default=500)      # 500
-    parser.add_argument('--max_epoch_cmb', type=int, default=500)  # 500
-    parser.add_argument('--min_epoch', type=int, default=300)        # 300
-    parser.add_argument('--min_epoch_cmb', type=int, default=300)    # 300
+    # parser.add_argument('--dataset', type=str, default='BCIC4_2a')
+    # parser.add_argument('--data_path', type=str, default='./BCIC4-2a/data')
+    # parser.add_argument('--subjects', type=int, default=9)
+    # parser.add_argument('--num_class', type=int, default=4)
+    # parser.add_argument('--sampling_rate', type=int, default=250)
+    # parser.add_argument('--signal_length', type=int, default=1000)
+    # parser.add_argument('--downsample_rate', type=int, default=2)
+    # parser.add_argument('--in_chan', type=int, default=22)
+    # parser.add_argument('--blocks', type=int, default=None)
+    # parser.add_argument('--max_epoch', type=int, default=500)      # 500
+    # parser.add_argument('--max_epoch_cmb', type=int, default=500)  # 500
+    # parser.add_argument('--min_epoch', type=int, default=300)        # 300
+    # parser.add_argument('--min_epoch_cmb', type=int, default=300)    # 300
     ####open-bmi
     # parser.add_argument('--dataset', type=str, default='Open_BMI')
     # parser.add_argument('--data_path', type=str, default='./OpenBMI/data')
@@ -36,19 +36,19 @@ if __name__ == '__main__':
     # parser.add_argument('--min_epoch', type=int, default=100)
     # parser.add_argument('--min_epoch_cmb', type=int, default=100)
     ### HG
-    # parser.add_argument('--dataset', type=str, default='HG')
-    # parser.add_argument('--data_path', type=str, default='./High-Gamma/data')
-    # parser.add_argument('--subjects', type=int, default=14)
-    # parser.add_argument('--num_class', type=int, default=4)
-    # parser.add_argument('--sampling_rate', type=int, default=500)
-    # parser.add_argument('--signal_length', type=int, default=2000)
-    # parser.add_argument('--downsample_rate', type=int, default=2)
-    # parser.add_argument('--in_chan', type=int, default=22)
-    # parser.add_argument('--blocks', type=int, default=None)
-    # parser.add_argument('--max_epoch', type=int, default=500)
-    # parser.add_argument('--max_epoch_cmb', type=int, default=500)
-    # parser.add_argument('--min_epoch', type=int, default=300)
-    # parser.add_argument('--min_epoch_cmb', type=int, default=300)
+    parser.add_argument('--dataset', type=str, default='HG')
+    parser.add_argument('--data_path', type=str, default='./High-Gamma/data')
+    parser.add_argument('--subjects', type=int, default=14)
+    parser.add_argument('--num_class', type=int, default=4)
+    parser.add_argument('--sampling_rate', type=int, default=500)
+    parser.add_argument('--signal_length', type=int, default=2000)
+    parser.add_argument('--downsample_rate', type=int, default=2)
+    parser.add_argument('--in_chan', type=int, default=22)
+    parser.add_argument('--blocks', type=int, default=None)
+    parser.add_argument('--max_epoch', type=int, default=500)
+    parser.add_argument('--max_epoch_cmb', type=int, default=500)
+    parser.add_argument('--min_epoch', type=int, default=300)
+    parser.add_argument('--min_epoch_cmb', type=int, default=300)
 
 
     ######## Training Process ########
